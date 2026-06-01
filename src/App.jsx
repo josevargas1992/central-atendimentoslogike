@@ -1132,7 +1132,9 @@ function RecordModal({ record, employees, tipos=[], pageDepartment="Geral", page
   const isNew = !record?.id;
   const defaultAtendente = isNew ? (currentUser?.id || employees[0]?.id || "") : (record?.atendenteId || "");
   const tiposFiltrados = (() => {
-    const especificos = tipos.filter(tp => tp.department === pageDepartment);
+    const atendDept = employees.find(e => e.id === (record?.atendenteId || defaultAtendente))?.department;
+    const depts = new Set([pageDepartment, atendDept].filter(Boolean));
+    const especificos = tipos.filter(tp => depts.has(tp.department));
     return especificos.length > 0 ? especificos : tipos.filter(tp => tp.department === "Geral");
   })();
   const defaultTipo = tiposFiltrados[0]?.label || "Outro";
