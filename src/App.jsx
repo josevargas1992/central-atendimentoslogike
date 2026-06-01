@@ -1458,7 +1458,8 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
   const addRecord  = async f => { const id = records.length ? Math.max(...records.map(r=>r.id))+1 : 1; await setDoc(doc(db,"records",`${page.id}-${id}`), {...f, id, pageId:page.id}); setModal(null); };
   const editRecord = async f => { await setDoc(doc(db,"records",`${page.id}-${f.id}`), {...f, pageId:page.id}); setModal(null); };
   const delRecord  = async () => { await deleteDoc(doc(db,"records",`${page.id}-${confirmId}`)); setConfirmId(null); };
-  const togglePrio = async id => { const r = records.find(x=>x.id===id); if(r) await setDoc(doc(db,"records",`${page.id}-${id}`), {...r, prioridade:!r.prioridade}); };
+  const togglePrio      = async id => { const r = records.find(x=>x.id===id); if(r) await setDoc(doc(db,"records",`${page.id}-${id}`), {...r, prioridade:!r.prioridade}); };
+  const togglePesquisa  = async id => { const r = records.find(x=>x.id===id); if(r) await setDoc(doc(db,"records",`${page.id}-${id}`), {...r, pesquisaEnviada:!r.pesquisaEnviada}); };
   const resolveRecord = async r => { await setDoc(doc(db,"records",`${page.id}-${r.id}`), {...r, status:"Resolvido", pageId:page.id}); setSatPopup(true); };
   const saveAgenda    = async updated => { await setDoc(doc(db,"records",`${page.id}-${updated.id}`), {...updated, pageId:page.id}); setAgendaModal(null); };
   const saveTipoColor = async tp => { await setDoc(doc(db,"tipos",tp.id), tp); setTipos(prev=>prev.map(x=>x.id===tp.id?tp:x)); };
@@ -1573,7 +1574,17 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
                 <thead>
                   <tr style={{ background:t.thead, borderBottom:`2px solid ${t.theadBorder}` }}>
-                    {[["P","36px"],["Status","130px"],["Data","72px"],["Atendente","110px"],["Cliente",""],["Via","90px"],["Contato","140px"],["Tipo","115px"],["Descrição",""],["","90px"]].map(([h,w])=>(
+                    {[["P","36px"],["Status","130px"]].map(([h,w])=>(
+                      <th key={h} style={{ padding:"11px 12px", textAlign:"left", color:t.textMuted, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap", width:w||undefined }}>{h}</th>
+                    ))}
+                    <th title="Pesquisa enviada" style={{ padding:"11px 12px", textAlign:"center", color:t.textMuted, width:"44px" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="13" viewBox="0 0 34 26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="0" y1="7" x2="8" y2="7"/><line x1="2" y1="13" x2="8" y2="13"/>
+                        <rect x="10" y="3" width="22" height="16" rx="2"/>
+                        <polyline points="10,3 21,12 32,3"/>
+                      </svg>
+                    </th>
+                    {[["Data","72px"],["Atendente","110px"],["Cliente",""],["Via","90px"],["Contato","140px"],["Tipo","115px"],["Descrição",""],["","90px"]].map(([h,w])=>(
                       <th key={h} style={{ padding:"11px 12px", textAlign:"left", color:t.textMuted, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap", width:w||undefined }}>{h}</th>
                     ))}
                     <th style={{ padding:"11px 12px", textAlign:"center", color:t.textMuted, width:"44px" }}>
@@ -1604,6 +1615,7 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
                       >
                         <td style={{ padding:"9px 12px", textAlign:"center" }}><input type="checkbox" checked={r.prioridade} onChange={()=>togglePrio(r.id)} style={{ width:15, height:15, cursor:"pointer", accentColor:"#6366f1" }} /></td>
                         <td style={{ padding:"9px 12px" }}><StatusBadge status={r.status} /></td>
+                        <td style={{ padding:"9px 12px", textAlign:"center" }}><input type="checkbox" checked={!!r.pesquisaEnviada} onChange={()=>togglePesquisa(r.id)} title="Pesquisa enviada" style={{ width:15, height:15, cursor:"pointer", accentColor:"#10b981" }} /></td>
                         <td style={{ padding:"9px 12px", color:t.textSub, whiteSpace:"nowrap", fontSize:12 }}>{r.data}</td>
                         <td style={{ padding:"9px 12px" }}>
                           {atend
