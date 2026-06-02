@@ -1185,13 +1185,6 @@ function RecordModal({ record, employees, tipos=[], pageDepartment="Geral", page
             </select>
           )}
         </Field>
-        <Field label="Via">
-          <select value={f.via} onChange={e=>setF(p=>({...p, via:e.target.value, contato:""}))} style={sel}>
-            {["Ticket","WhatsApp","Telefone","Telegram"].map(o=><option key={o}>{o}</option>)}
-          </select>
-        </Field>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
         <Field label="Tipo">
           <select value={f.tipo} onChange={e=>set("tipo")(e.target.value)} style={sel}>
             {tiposFiltrados.length > 0
@@ -1200,20 +1193,41 @@ function RecordModal({ record, employees, tipos=[], pageDepartment="Geral", page
             }
           </select>
         </Field>
-        <Field label={f.via === "Ticket" ? "Link / URL" : f.via === "Telegram" ? "Nome no Telegram" : "Telefone"}>
-          {f.via === "Ticket" ? (
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
+        <Field label="1ª Via">
+          <select value={f.via} onChange={e=>setF(p=>({...p, via:e.target.value, contato:""}))} style={sel}>
+            {["Ticket","WhatsApp","Telefone","Telegram"].map(o=><option key={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label={f.via==="Ticket"?"Link / URL":f.via==="Telegram"?"Nome no Telegram":"Telefone"}>
+          {f.via==="Ticket" ? (
             <input value={f.contato} onChange={e=>set("contato")(e.target.value)} style={inp} placeholder="https://..." />
-          ) : f.via === "Telegram" ? (
+          ) : f.via==="Telegram" ? (
             <input value={f.contato} onChange={e=>set("contato")(e.target.value)} style={inp} placeholder="Nome da pessoa no Telegram" />
           ) : (
-            <input
-              value={f.contato}
-              onChange={e=>set("contato")(maskPhone(e.target.value))}
-              onPaste={e=>{ e.preventDefault(); set("contato")(maskPhone(e.clipboardData.getData("text"))); }}
-              style={inp} placeholder="(00) 00000-0000" type="tel"
-            />
+            <input value={f.contato} onChange={e=>set("contato")(maskPhone(e.target.value))} onPaste={e=>{ e.preventDefault(); set("contato")(maskPhone(e.clipboardData.getData("text"))); }} style={inp} placeholder="(00) 00000-0000" type="tel" />
           )}
         </Field>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
+        <Field label="2ª Via (opcional)">
+          <select value={f.via2||""} onChange={e=>setF(p=>({...p, via2:e.target.value||undefined, contato2:""}))} style={sel}>
+            <option value="">— Nenhuma —</option>
+            {["Ticket","WhatsApp","Telefone","Telegram"].map(o=><option key={o}>{o}</option>)}
+          </select>
+        </Field>
+        {f.via2 ? (
+          <Field label={f.via2==="Ticket"?"Link / URL":f.via2==="Telegram"?"Nome no Telegram":"Telefone"}>
+            {f.via2==="Ticket" ? (
+              <input value={f.contato2||""} onChange={e=>set("contato2")(e.target.value)} style={inp} placeholder="https://..." />
+            ) : f.via2==="Telegram" ? (
+              <input value={f.contato2||""} onChange={e=>set("contato2")(e.target.value)} style={inp} placeholder="Nome da pessoa no Telegram" />
+            ) : (
+              <input value={f.contato2||""} onChange={e=>set("contato2")(maskPhone(e.target.value))} onPaste={e=>{e.preventDefault();set("contato2")(maskPhone(e.clipboardData.getData("text")));}} style={inp} placeholder="(00) 00000-0000" type="tel" />
+            )}
+          </Field>
+        ) : <div />}
       </div>
       <Field label="Descrição">
         <textarea value={f.descricao} onChange={e=>set("descricao")(e.target.value)} rows={3} style={{ ...inp, resize:"vertical" }} placeholder="Detalhes do atendimento..." />
@@ -1625,12 +1639,24 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
                             : <span style={{ color:t.textMuted, fontSize:12 }}>—</span>}
                         </td>
                         <td style={{ padding:"9px 12px", fontWeight:600, color:t.text, maxWidth:200 }}><div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.cliente}</div></td>
-                        <td style={{ padding:"9px 12px" }}><ViaBadge via={r.via} /></td>
-                        <td style={{ padding:"9px 12px", maxWidth:140 }}>
-                          {r.via === "Ticket" && r.contato
-                            ? <a href={/^https?:\/\//i.test(r.contato) ? r.contato : `https://${r.contato}`} target="_blank" rel="noreferrer" style={{ color:"#6366f1", fontSize:12, fontWeight:500, textDecoration:"none", display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={r.contato}>🔗 {r.contato}</a>
-                            : <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:t.textSub, fontSize:12 }}>{r.contato}</div>
-                          }
+                        <td style={{ padding:"9px 12px" }}>
+                          <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                            <ViaBadge via={r.via} />
+                            {r.via2 && <ViaBadge via={r.via2} />}
+                          </div>
+                        </td>
+                        <td style={{ padding:"9px 12px", maxWidth:160 }}>
+                          <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                            {r.via === "Ticket" && r.contato
+                              ? <a href={/^https?:\/\//i.test(r.contato) ? r.contato : `https://${r.contato}`} target="_blank" rel="noreferrer" style={{ color:"#6366f1", fontSize:12, fontWeight:500, textDecoration:"none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block" }} title={r.contato}>🔗 {r.contato}</a>
+                              : <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:t.textSub, fontSize:12 }}>{r.contato}</div>
+                            }
+                            {r.via2 && r.contato2 && (
+                              r.via2 === "Ticket"
+                                ? <a href={/^https?:\/\//i.test(r.contato2) ? r.contato2 : `https://${r.contato2}`} target="_blank" rel="noreferrer" style={{ color:"#6366f1", fontSize:12, fontWeight:500, textDecoration:"none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block" }} title={r.contato2}>🔗 {r.contato2}</a>
+                                : <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:t.textSub, fontSize:12 }}>{r.contato2}</div>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding:"9px 12px" }}><TipoBadge tipo={r.tipo} tipoObj={tiposMap[r.tipo]} onClick={()=>tiposMap[r.tipo]&&setTipoEdit({...tiposMap[r.tipo]})} /></td>
                         <td style={{ padding:"9px 12px", maxWidth:240 }}><div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:t.textSub }}>{r.descricao}</div></td>
