@@ -587,7 +587,7 @@ function PageCard({ pg, employees, cnt, isCurrentMonth, actions, onClick }) {
         </div>
 
         <div style={{ display:"flex", gap:16, marginBottom: cnt.total > 0 ? 14 : 0 }}>
-          {[["TOTAL",cnt.total,"#1e293b"],["RESOLVIDOS",cnt.resolved,"#16a34a"],["EM ABERTO",cnt.inProgress,"#d97706"]].map(([l,v,c])=>(
+          {[["TOTAL",cnt.total,t.text],["RESOLVIDOS",cnt.resolved,"#16a34a"],["EM ABERTO",cnt.inProgress,"#d97706"],["OP ABERTO",(cnt.opAbertos||0),"#8b5cf6"]].map(([l,v,c])=>(
             <div key={l}>
               <div style={{ fontSize:22, fontWeight:800, color:c, lineHeight:1 }}>{v}</div>
               <div style={{ fontSize:10, color:t.textMuted, fontWeight:700 }}>{l}</div>
@@ -776,10 +776,13 @@ function AdminPanel({ onBack, onGestao }) {
       const [emps, pgs, tps, depts] = await Promise.all([loadEmployees(), loadPages(), loadTipos(), loadDepartments()]);
       const sorted = [...pgs].sort((a,b)=>b.year!==a.year?b.year-a.year:b.month-a.month);
       setEmployees(emps); setPages(sorted); setTipos(tps); setDepartments(depts);
+      const tpMap = Object.fromEntries(tps.map(tp=>[tp.label,tp]));
+      const normStr = s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+      const isOrgao = tipo => { const tp=tpMap[tipo]; return normStr(tp?.department).includes("orgao")||normStr(tipo).includes("orgao"); };
       const cnts = {};
       await Promise.all(sorted.map(async p => {
         const recs = await loadRecords(p.id);
-        cnts[p.id] = { total:recs.length, resolved:recs.filter(r=>r.status==="Resolvido").length, inProgress:recs.filter(r=>r.status==="Em atendimento").length };
+        cnts[p.id] = { total:recs.length, resolved:recs.filter(r=>r.status==="Resolvido").length, inProgress:recs.filter(r=>r.status==="Em atendimento").length, opAbertos:recs.filter(r=>isOrgao(r.tipo)&&(r.status==="Em atendimento"||r.status==="Pendente")).length };
       }));
       setCounts(cnts); setLoading(false);
     })();
@@ -794,7 +797,7 @@ function AdminPanel({ onBack, onGestao }) {
     const isEdit = modal.mode === "edit";
     const updated = isEdit ? pages.map(p=>p.id===pg.id?pg:p) : [...pages, pg];
     await persistPages(updated);
-    if (!isEdit) setCounts(c=>({...c,[pg.id]:{total:0,resolved:0,inProgress:0}}));
+    if (!isEdit) setCounts(c=>({...c,[pg.id]:{total:0,resolved:0,inProgress:0,opAbertos:0}}));
     showToast(isEdit ? "✓  Planilha atualizada." : "✓  Planilha criada.");
     setModal(null);
   };
@@ -920,7 +923,7 @@ function AdminPanel({ onBack, onGestao }) {
             ) : (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:16 }}>
                 {pages.map(pg => (
-                  <PageCard key={pg.id} pg={pg} employees={employees} cnt={counts[pg.id]||{total:0,resolved:0,inProgress:0}} isCurrentMonth={pg.month===cur.month&&pg.year===cur.year} onClick={()=>{}}
+                  <PageCard key={pg.id} pg={pg} employees={employees} cnt={counts[pg.id]||{total:0,resolved:0,inProgress:0,opAbertos:0}} isCurrentMonth={pg.month===cur.month&&pg.year===cur.year} onClick={()=>{}}
                     actions={<>
                       <button onClick={()=>setModal({mode:"edit",type:"page",page:pg})} style={{ background:t.btnSecBg, border:`1px solid ${t.border}`, borderRadius:8, padding:"5px 9px", cursor:"pointer", fontSize:13 }}>✏️</button>
                       <button onClick={()=>{setConfirmId(pg.id);setConfirmType("page");}} style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"5px 9px", cursor:"pointer", fontSize:13 }}>🗑️</button>
@@ -1374,15 +1377,18 @@ function HomeScreen({ user, onOpenPage, onLogout, onGestao }) {
 
   useEffect(() => {
     (async () => {
-      const [emps, pgs] = await Promise.all([loadEmployees(), loadPages()]);
+      const [emps, pgs, tps] = await Promise.all([loadEmployees(), loadPages(), loadTipos()]);
       const sorted = [...pgs]
         .filter(p => p.responsibleId === user.id)
         .sort((a,b)=>b.year!==a.year?b.year-a.year:b.month-a.month);
       setEmployees(emps); setPages(sorted);
+      const tpMap = Object.fromEntries(tps.map(tp=>[tp.label,tp]));
+      const normStr = s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+      const isOrgao = tipo => { const tp=tpMap[tipo]; return normStr(tp?.department).includes("orgao")||normStr(tipo).includes("orgao"); };
       const cnts = {};
       await Promise.all(sorted.map(async p => {
         const recs = await loadRecords(p.id);
-        cnts[p.id] = { total:recs.length, resolved:recs.filter(r=>r.status==="Resolvido").length, inProgress:recs.filter(r=>r.status==="Em atendimento").length };
+        cnts[p.id] = { total:recs.length, resolved:recs.filter(r=>r.status==="Resolvido").length, inProgress:recs.filter(r=>r.status==="Em atendimento").length, opAbertos:recs.filter(r=>isOrgao(r.tipo)&&(r.status==="Em atendimento"||r.status==="Pendente")).length };
       }));
       setCounts(cnts); setLoading(false);
     })();
@@ -1431,7 +1437,7 @@ function HomeScreen({ user, onOpenPage, onLogout, onGestao }) {
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:16 }}>
             {pages.map(pg => (
-              <PageCard key={pg.id} pg={pg} employees={employees} cnt={counts[pg.id]||{total:0,resolved:0,inProgress:0}} isCurrentMonth={pg.month===cur.month&&pg.year===cur.year} onClick={()=>onOpenPage(pg, employees)} />
+              <PageCard key={pg.id} pg={pg} employees={employees} cnt={counts[pg.id]||{total:0,resolved:0,inProgress:0,opAbertos:0}} isCurrentMonth={pg.month===cur.month&&pg.year===cur.year} onClick={()=>onOpenPage(pg, employees)} />
             ))}
           </div>
         )}
@@ -1455,7 +1461,13 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
   const [alertRecord, setAlertRecord] = useState(null);
   const [tipoEdit,    setTipoEdit]    = useState(null);
   const alertedIds = useRef(new Set());
-  const [filters,   setFilters]   = useState({ search:"", status:"Todos", tipo:"Todos", via:"Todos", atendente:"Todos" });
+  const FKEY = `atend_filters_${page.id}`;
+  const [filters, setFilters] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(FKEY) || "{}");
+      return { search:"", status:"Todos", tipo:"Todos", via:"Todos", atendente:"Todos", ...saved };
+    } catch { return { search:"", status:"Todos", tipo:"Todos", via:"Todos", atendente:"Todos" }; }
+  });
 
   useEffect(() => {
     let unsub;
@@ -1480,6 +1492,10 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
   const saveAgenda    = async updated => { await setDoc(doc(db,"records",`${page.id}-${updated.id}`), {...updated, pageId:page.id}); setAgendaModal(null); };
   const saveTipoColor = async tp => { await setDoc(doc(db,"tipos",tp.id), tp); setTipos(prev=>prev.map(x=>x.id===tp.id?tp:x)); };
   const setF = k => v => setFilters(p=>({...p,[k]:v}));
+  useEffect(() => {
+    const { search:_, ...toSave } = filters;
+    localStorage.setItem(FKEY, JSON.stringify(toSave));
+  }, [filters]);
 
   useEffect(() => {
     const check = () => {
@@ -1506,11 +1522,18 @@ function PageDetail({ page, initEmployees, user, onBack, onLogout }) {
 
   const responsible = employees.find(e=>e.id===page.responsibleId);
   const tiposMap = Object.fromEntries(tipos.map(tp => [tp.label, tp]));
+  const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const opAbertos = records.filter(r => {
+    const tp = tiposMap[r.tipo];
+    const isOrgao = norm(tp?.department).includes("orgao") || norm(tp?.department).includes("orgao publico") || norm(r.tipo).includes("orgao");
+    return isOrgao && (r.status === "Em atendimento" || r.status === "Pendente");
+  }).length;
   const stats = [
     ["Total",          records.length,                                        t.text],
     ["Resolvidos",     records.filter(r=>r.status==="Resolvido").length,      "#16a34a"],
     ["Em Atendimento", records.filter(r=>r.status==="Em atendimento").length, "#d97706"],
     ["Pendentes",      records.filter(r=>r.status==="Pendente").length,       "#dc2626"],
+    ["Órgãos Abertos", opAbertos,                                             "#8b5cf6"],
   ];
 
   const selSt = { padding:"8px 12px", border:`1.5px solid ${t.inputBorder}`, borderRadius:8, fontSize:13, color:t.inputText, background:t.inputBg, cursor:"pointer", ...FF };
