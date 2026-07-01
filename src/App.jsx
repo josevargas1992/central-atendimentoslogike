@@ -1991,13 +1991,14 @@ function buildReportHtml(monthsArr, vendors, collabs, cfg) {
     const c=Math.abs(p)<0.05?"#94a3b8":ok?"#22c55e":"#ef4444";
     return `<br><span style="font-size:10px;font-weight:700;color:${c}">${p>0?"+":""}${p}%</span>`;
   };
-  const compRow = (label, getFn, inv=false, bold=false, noD=false) => {
+  const compRow = (label, getFn, inv=false, bold=false, noD=false, tip="") => {
     const vals=ms.map((m,i) => {
       const v=getFn(m.mx); const s=(v!=null&&v!=="") ? String(v) : "";
       const d=(!noD&&ms.length>1&&s)?(i===0?`<br><span style="font-size:10px;color:#cbd5e1">-</span>`:dPct(getFn(ms[0].mx),v,inv)):"";
       return `<td ${tds("text-align:center;"+(bold?"font-weight:700;":""))}>${s}${d}</td>`;
     }).join("");
-    return `<tr><td ${tds("color:#64748b;font-size:12px")}>${label}</td>${vals}</tr>`;
+    const tipHtml = tip ? ` <span class="tip" data-tip="${tip}">💬</span>` : "";
+    return `<tr><td ${tds("color:#64748b;font-size:12px")}>${label}${tipHtml}</td>${vals}</tr>`;
   };
   const vSection = (lbl, items) => items.map((it,idx) => {
     const vals=ms.map((m,i) => {
@@ -2015,16 +2016,24 @@ function buildReportHtml(monthsArr, vendors, collabs, cfg) {
     return `${mkColgroup(true)}<thead><tr><th ${ths("width:36px;padding:4px")}></th><th ${ths("")}>INDICADOR</th>${cols}</tr></thead>`;
   };
 
-  const css = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:13px;line-height:1.5}.hdr{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:#fff;padding:28px 36px 22px}.hdr h1{font-size:28px;font-weight:900;letter-spacing:-.5px}.hdr .sub{font-size:12px;color:#94a3b8;margin-top:5px}.body{max-width:1100px;margin:0 auto;padding:8px 28px 48px}h2{font-size:13px;font-weight:800;color:#0f172a;padding:10px 16px;background:#f8fafc;border-left:4px solid #6366f1;margin:24px 0 0;text-transform:uppercase;letter-spacing:.6px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:0}th{padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0}.tblwrap{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px;margin-top:1px}.vcard{border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:20px;margin-top:1px}.vcard-hdr{background:#1e293b;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px}.vcard-hdr strong{font-size:14px;font-weight:800}.vcard-hdr .code{font-size:11px;color:#94a3b8}.vlbl{writing-mode:vertical-lr;transform:rotate(180deg);text-align:center;font-size:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#94a3b8;background:#f8fafc;padding:8px 4px;border-right:1px solid #e2e8f0;white-space:nowrap;width:36px}@media print{body{font-size:11px}.hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}.vcard{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}.tblwrap{break-inside:avoid}h2{break-after:avoid}}`;
+  const css = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:13px;line-height:1.5}.hdr{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:#fff;padding:28px 36px 22px}.hdr h1{font-size:28px;font-weight:900;letter-spacing:-.5px}.hdr .sub{font-size:12px;color:#94a3b8;margin-top:5px}.body{max-width:1100px;margin:0 auto;padding:8px 28px 48px}h2{font-size:13px;font-weight:800;color:#0f172a;padding:10px 16px;background:#f8fafc;border-left:4px solid #6366f1;margin:24px 0 0;text-transform:uppercase;letter-spacing:.6px}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:0}th{padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0}.tblwrap{border:1px solid #e2e8f0;border-radius:8px;overflow:visible;margin-bottom:16px;margin-top:1px}.vcard{border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:20px;margin-top:1px}.vcard-hdr{background:#1e293b;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px}.vcard-hdr strong{font-size:14px;font-weight:800}.vcard-hdr .code{font-size:11px;color:#94a3b8}.vlbl{writing-mode:vertical-lr;transform:rotate(180deg);text-align:center;font-size:9px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#94a3b8;background:#f8fafc;padding:8px 4px;border-right:1px solid #e2e8f0;white-space:nowrap;width:36px}.tip{position:relative;cursor:help;display:inline-block;font-size:11px;user-select:none;vertical-align:middle}.tip::after{content:attr(data-tip);position:absolute;left:22px;top:50%;transform:translateY(-50%);background:#1e293b;color:#f1f5f9;padding:10px 14px;border-radius:9px;font-size:11.5px;white-space:pre-line;width:300px;z-index:9999;display:none;line-height:1.7;box-shadow:0 6px 20px rgba(0,0,0,0.4);font-weight:400;pointer-events:none}.tip:hover::after{display:block}@media print{body{font-size:11px}.hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}.vcard{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}.tblwrap{break-inside:avoid}h2{break-after:avoid}.tip{display:none}}`;
+
+  // textos explicativos dos indicadores (visíveis ao passar o mouse no ícone 💬)
+  const TIP_NOVA_ASS   = "Lógike Admin → Pedidos Pagos&#10;Período: dia 20 do mês anterior até dia 21 do mês atual&#10;Tipo: Vendedor&#10;Outros filtros → Total pedido ≥ R$ 900,00";
+  const TIP_RENOV      = "Lógike Admin → Renovações&#10;Período: mês atual&#10;Status: Todos | Programa: Todos&#10;Tipo: Assin. Programa";
+  const TIP_CHURN      = "Lógike Admin → Renovações&#10;Período: mês atual&#10;Status: Canceladas | Programa: Todos&#10;Tipo: Assin. Programa&#10;Cálculo: (canceladas ÷ total de renovações) × 100";
+  const TIP_SAT        = "Lógike Admin → Gestão → Pesquisa de Satisfação&#10;Período: mês atual&#10;Respostas, atendente, setor e comentário: Todos";
+  const TIP_CLI_ATIVOS = "Lógike Admin → Gestão → Informações Gerenciais&#10;Sem filtro de data&#10;Banco, tipo de cliente e programa: Todos&#10;Nº de acessos: Todos | Assinaturas: Ativas";
+  const TIP_VALOR_NOVA = "Lógike Admin → Pedidos Pagos&#10;Período: dia 20 do mês anterior até dia 21 do mês atual&#10;Tipo: Vendedor&#10;Outros filtros → Total pedido ≥ R$ 900,00&#10;Usar o valor total da pesquisa";
 
   // 1. INDICADORES DO SETOR
   let indSec = "";
   if (sections.metas) {
     indSec = `<h2>Indicadores do Setor</h2><div class="tblwrap"><table>${thead("Indicadores")}<tbody>${[
-      compRow("Novas assinaturas",      mx => mx.novasAss||""),
-      compRow("Taxa de Renovação",      mx => mx.renovReal!=null?mx.renovReal+"%":""),
-      compRow("Taxa de Churn",          mx => mx.churnReal!=null?mx.churnReal+"%":"", true),
-      compRow("Satisfação do Cliente",  mx => mx.satReal?mx.satReal+"%":""),
+      compRow("Novas assinaturas",      mx => mx.novasAss||"",                              false, false, false, TIP_NOVA_ASS),
+      compRow("Taxa de Renovação",      mx => mx.renovReal!=null?mx.renovReal+"%":"",       false, false, false, TIP_RENOV),
+      compRow("Taxa de Churn",          mx => mx.churnReal!=null?mx.churnReal+"%":"",       true,  false, false, TIP_CHURN),
+      compRow("Satisfação do Cliente",  mx => mx.satReal?mx.satReal+"%":"",                 false, false, false, TIP_SAT),
     ].join("")}</tbody></table></div>`;
   }
 
@@ -2032,10 +2041,10 @@ function buildReportHtml(monthsArr, vendors, collabs, cfg) {
   let comSec = "";
   if (sections.comercial) {
     const comRows = [
-      compRow("Clientes ativos",                 mx => mx.clientesAtivos||""),
-      compRow("Novas assinaturas",               mx => mx.novasAss||""),
-      compRow("Novas assinaturas Canceladas",     mx => mx.novasAssCanceladas||"", true),
-      compRow("Valor total em novas assinaturas", mx => mx.valorTotalNovas>0?fmtBRL(mx.valorTotalNovas):""),
+      compRow("Clientes ativos",                 mx => mx.clientesAtivos||"",                    false, false, false, TIP_CLI_ATIVOS),
+      compRow("Novas assinaturas",               mx => mx.novasAss||"",                          false, false, false, TIP_NOVA_ASS),
+      compRow("Novas assinaturas Canceladas",     mx => mx.novasAssCanceladas||"",               true),
+      compRow("Valor total em novas assinaturas", mx => mx.valorTotalNovas>0?fmtBRL(mx.valorTotalNovas):"", false, false, false, TIP_VALOR_NOVA),
       compRow("Ticket médio Total",               mx => mx.ticketMedio?fmtBRL(mx.ticketMedio):""),
     ].join("");
     const leadsRows = [
@@ -2125,7 +2134,15 @@ function buildReportHtml(monthsArr, vendors, collabs, cfg) {
           {label:"Média de atendimento diário",     fn: mx => { const d=(mx.ind.colab||{})[c.id]||{}; const t=(+d.whatsapp||0)+(+d.tickets||0)+(+d.telefone||0); return d.diasTrab&&+d.diasTrab>0?(t/+d.diasTrab).toFixed(1):""; }},
           {label:"Média de pausas por dia",         fn: mx => { const d=(mx.ind.colab||{})[c.id]||{}; if(!d.pausaTimeTotal||!d.diasTrab||+d.diasTrab===0) return ""; const s=parseTimeToSec(d.pausaTimeTotal); return s>0?secToHHMMSS(Math.round(s/+d.diasTrab)):""; }, noD:true},
         ]);
-        return `<div class="vcard"><div class="vcard-hdr"><strong>${fname}</strong></div><table>${colabThead()}<tbody>${pres}</tbody></table></div><div style="height:4px"></div><div class="vcard"><table>${mkColgroup(true)}<tbody>${atend}</tbody></table></div>`;
+        const avaliacoes = ms.map(m => ({ label: m.label, content: ((m.mx.ind.colab)||{})[c.id]?.avaliacao || "" }));
+        const hasAval = avaliacoes.some(a => a.content);
+        const avalBody = ms.length === 1
+          ? `<div style="padding:14px 16px;font-size:13px;line-height:1.8;color:#334155">${avaliacoes[0].content}</div>`
+          : `<div style="display:flex">${avaliacoes.map((a, i) => `<div style="flex:1;padding:14px 16px;${i>0?"border-left:1px solid #e2e8f0":""}"><div style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${a.label}</div><div style="font-size:13px;line-height:1.8;color:#334155">${a.content||'<em style="color:#94a3b8">Sem avaliação registrada.</em>'}</div></div>`).join("")}</div>`;
+        const avalCard = hasAval
+          ? `<div style="height:4px"></div><div class="vcard"><div class="vcard-hdr" style="background:#1e3a5f"><strong>📝 Avaliação — ${fname}</strong></div>${avalBody}</div>`
+          : "";
+        return `<div class="vcard"><div class="vcard-hdr"><strong>${fname}</strong></div><table>${colabThead()}<tbody>${pres}</tbody></table></div><div style="height:4px"></div><div class="vcard"><table>${mkColgroup(true)}<tbody>${atend}</tbody></table></div>${avalCard}`;
       }).join("");
     };
     colabSec = `<h2>Atendentes - Renovação</h2>${buildCards(renovCollabs)}<h2>Atendentes - Adm &amp; Financeiro</h2>${buildCards(admCollabs)}`;
@@ -2946,6 +2963,40 @@ function GestaoComercial({ onBack, onLogout }) {
               {fld("indicadores.colab."+c.id,"pausas","Pausas (qtd)")}
               {fld("indicadores.colab."+c.id,"mediaLigacao","Média em Ligação (AHT)","text")}
               {fld("indicadores.colab."+c.id,"talkTime","Tempo Total em Ligações","text")}
+            </div>
+            {/* Avaliação Individual */}
+            <div style={{ marginTop:14, paddingTop:12, borderTop:`1px solid ${t.border}` }}>
+              <div style={{ fontSize:10, fontWeight:700, color:t.textMuted, textTransform:"uppercase", letterSpacing:".5px", marginBottom:7 }}>📝 Avaliação Individual</div>
+              <div style={{ display:"flex", gap:4, marginBottom:6 }}>
+                {[
+                  { label:"N", title:"Normal",          cmd:null },
+                  { label:"B", title:"Negrito",         cmd:"bold",          s:{ fontWeight:"bold" } },
+                  { label:"I", title:"Itálico",         cmd:"italic",        s:{ fontStyle:"italic" } },
+                  { label:"S", title:"Sublinhado",      cmd:"underline",     s:{ textDecoration:"underline" } },
+                  { label:"T", title:"Tachado",         cmd:"strikeThrough", s:{ textDecoration:"line-through" } },
+                ].map(({ label, title, cmd, s }) => (
+                  <button key={label} title={title}
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      if (!cmd) { document.execCommand("removeFormat", false, null); return; }
+                      document.execCommand(cmd, false, null);
+                    }}
+                    style={{ ...(s||{}), background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:5, padding:"3px 9px", cursor:"pointer", fontSize:12, color:t.text, fontFamily:"inherit", minWidth:28 }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: cd.avaliacao || "" }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#3b82f6"; }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = t.border;
+                  saveField("indicadores.colab."+c.id, "avaliacao", e.currentTarget.innerHTML);
+                }}
+                style={{ minHeight:80, border:`1.5px solid ${t.border}`, borderRadius:8, padding:"8px 10px", fontSize:13, color:t.text, background:t.inputBg, outline:"none", lineHeight:1.6, transition:"border-color .15s" }}
+              />
             </div>
           </div>
         </div>
